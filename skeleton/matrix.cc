@@ -5,6 +5,9 @@
 #include <cstring>
 #include <cstdlib>
 
+using namespace std;
+
+#include "trees.h"
 #include "matrix.h"
 
 extern "C" {
@@ -48,8 +51,9 @@ inline bool operator<(const struct Element &a, const struct Element &b)
 
 static bool
 read_matrix_market(const char *filename,
-                   std::vector<Element> &elements,
-                   int &n_rows, int &n_cols)
+                   int &n_rows, int &n_cols,
+                   vector<Node> &nodes,
+                   vector<Edge> &edges)
 {
   FILE *fh = fopen(filename, "r");
   if (!fh)
@@ -79,6 +83,10 @@ read_matrix_market(const char *filename,
   n_rows = M;
   n_cols = N;
 
+  for (int i = 0; i < n_cols; i++) {
+    nodes.push_back(Node(i));
+  }
+
   for (int i = 0; i < nz; i++)
     {
       int row, col;
@@ -95,93 +103,37 @@ read_matrix_market(const char *filename,
       row--; /* adjust from 1-based to 0-based */
       col--;
 
-      elements.push_back(Element(row, col, val));
-      if (mm_is_symmetric(matcode) && row != col)
-        elements.push_back(Element(col, row, val));
+      Node &node1 = nodes[col];
+      Node &node2 = nodes[row];
+      if (col != row) {
+        int size_edge = edges.size();
+        edges.push_back(Edge(node1, node2, val));
+        node1.ptr_edges.push_back(size_edge);
+        node2.ptr_edges.push_back(size_edge);
+      }
+      //if (mm_is_symmetric(matcode) && row != col)
+      //  elements.push_back(Element(col, row, val));
     }
 
-  std::sort(elements.begin(), elements.end());
+  //std::sort(elements.begin(), elements.end());
   fclose(fh);
 
   return true;
 }
 
-/*
- * Transfer matrix elements into Compressed Row Storage structure
- */
-
-static void
-load_elements(const std::vector<Element> &elements,
-              double values[],
-              int col_ind[],
-              int row_ptr_begin[], int row_ptr_end[])
-{
-  int current_val = 0;
-  int current_row = 0;
-  row_ptr_begin[0] = 0;
-
-  for (std::vector<Element>::const_iterator it = elements.begin();
-       it != elements.end(); ++it)
-    {
-      if (it->row != current_row)
-        {
-          if (current_row + 1 != it->row)
-            {
-              fprintf(stderr, "Row skipping not implemented.\n");
-              abort();
-            }
-
-          row_ptr_end[current_row] = current_val - 1;
-          current_row++;
-          row_ptr_begin[current_row] = current_val;
-        }
-
-      values[current_val] = it->val;
-      col_ind[current_val] = it->col;
-      current_val++;
-    }
-
-  row_ptr_end[current_row] = current_val - 1;
-}
-
-void
-dump_nonzeros(const int n_rows,
-              const double values[],
-              const int col_ind[],
-              const int row_ptr_begin[],
-              const int row_ptr_end[])
-{
-  for (int row = 0; row < n_rows; ++row)
-    {
-      for (int idx = row_ptr_begin[row]; idx <= row_ptr_end[row]; ++idx)
-        {
-          fprintf(stderr, "%d %d %f\n", row, col_ind[idx], values[idx]);
-        }
-    }
-}
 
 bool
 load_matrix_market(const char *filename,
-                   const int max_n_elements,
-                   const int max_n_rows,
-                   int &nnz, int &n_rows, int &n_cols,
-                   double values[],
-                   int col_ind[],
-                   int row_ptr_begin[], int row_ptr_end[])
+                   int &n_rows, int &n_cols,
+                   std::vector<Node> &nodes,
+                   std::vector<Edge> &edges)
 {
-  std::vector<Element> elements;
 
-  if (!read_matrix_market(filename, elements, n_rows, n_cols))
+  if (!read_matrix_market(filename, n_rows, n_cols, nodes, edges))
     return false;
 
-  if (elements.size() >= (size_t)max_n_elements || n_rows >= max_n_rows)
-    return false;
-
-  nnz = elements.size();
-  load_elements(elements, values, col_ind, row_ptr_begin, row_ptr_end);
-
-  fprintf(stderr, "import ok: %d x %d matrix, %d nnz\n",
-         n_rows, n_cols, nnz);
+  fprintf(stderr, "import ok: %d x %d matrix\n",
+         n_rows, n_cols);
 
   return true;
 }

@@ -3,9 +3,9 @@ CXX = g++
 CFLAGS = -Wall -Wextra -Wno-unused-result -Wno-unused-parameter -Wno-unused-but-set-variable -O3 -g
 CXXFLAGS = $(CFLAGS) -std=c++11
 
-all:	lu
+all:	mst
 
-lu:	lu.o mmio.o matrix.o
+mst:	mst.o mmio.o matrix.o trees.o
 	$(CXX) $(CFLAGS) -o $@ $^
 
 
@@ -17,4 +17,4 @@ mmio.o:	mmio.c
 
 clean:
 	rm -f *o
-	rm -f lu
+	rm -f mst
