@@ -30,15 +30,15 @@ class SpanningTree {
         vector<Node> nodes;
         vector<Edge> edges;
         SpanningTree(vector<Node> nodes) : nodes(nodes) {};
-        void join_spanning_tree(SpanningTree st, Edge connection_edge);
+        void join_spanning_tree(SpanningTree &st, Edge connection_edge);
         Edge find_minimum_edge(vector<Edge> &edges, Node &node_connection);
         bool operator== (const SpanningTree &other) const {
-            return (nodes[0] == other.nodes[0]) && (nodes.size() == other.nodes.size());
+            return (nodes[0] == other.nodes[0]); // && (nodes.size() == other.nodes.size());
         }
 };
 
 vector<Edge> get_edges_from_node(Node node, vector<Edge> &edges);
-void remove_spanning_tree_from_list(vector<SpanningTree> &spanning_trees, SpanningTree &remove_st);
+int remove_spanning_tree_from_list(vector<SpanningTree> &spanning_trees, SpanningTree &remove_st);
 SpanningTree find_spanning_tree_of_node(Node node, vector<SpanningTree> &spanning_trees);
 
 #endif /* __TREES_H__ */

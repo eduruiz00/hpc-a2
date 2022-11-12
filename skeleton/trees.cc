@@ -22,7 +22,7 @@ vector<Edge> get_edges_from_node(Node node, vector<Edge> &edges)
   return edges_node;
 }
 
-void SpanningTree::join_spanning_tree(SpanningTree st, Edge connection_edge)
+void SpanningTree::join_spanning_tree(SpanningTree &st, Edge connection_edge)
 {
   // Copy nodes
   for (Node node : st.nodes) {
@@ -35,7 +35,7 @@ void SpanningTree::join_spanning_tree(SpanningTree st, Edge connection_edge)
   }
 
   // Add edge
-  edges.push_back(connection_edge);
+  // edges.push_back(connection_edge);
 }
 
 bool node_is_not_inside(vector<Node> &nodes, Node ev_node)
@@ -75,11 +75,16 @@ Edge SpanningTree::find_minimum_edge(vector<Edge> &edges, Node &node_connection)
   return edges_evaluated[0];
 }
 
-void remove_spanning_tree_from_list(vector<SpanningTree> &spanning_trees, SpanningTree &remove_st)
+int remove_spanning_tree_from_list(vector<SpanningTree> &spanning_trees, SpanningTree &remove_st)
 {
   auto it = find(spanning_trees.begin(), spanning_trees.end(), remove_st);
   int idx = it - spanning_trees.begin();
-  spanning_trees.erase(spanning_trees.begin() + idx);
+  
+  //fprintf(stderr, "Index: %i", idx);
+  if (idx == spanning_trees.size()) {
+    fprintf(stderr, "NOT FOUND!!!\n");
+  }
+  return idx;
 }
 
 SpanningTree find_spanning_tree_of_node(Node node, vector<SpanningTree> &spanning_trees)
