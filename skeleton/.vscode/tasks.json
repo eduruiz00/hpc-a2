@@ -1,11 +1,34 @@
 {
+    "version": "2.0.0",
     "tasks": [
         {
+            "label": "Build",
+            "type": "shell",
+            "command": "make",
+            "group": "build",
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": [
+                    "relative",
+                    "${workspaceFolder}"
+                ],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
+        },
+        {
             "type": "cppbuild",
-            "label": "C/C++: cpp compilar archivo activo",
-            "command": "/usr/bin/cpp",
+            "label": "C/C++: clang++ compilar archivo activo",
+            "command": "/usr/bin/clang++",
             "args": [
-                "-fdiagnostics-color=always",
+                "-fcolor-diagnostics",
+                "-fansi-escape-codes",
                 "-g",
                 "${file}",
                 "-o",
@@ -23,6 +46,5 @@
             },
             "detail": "Tarea generada por el depurador."
         }
-    ],
-    "version": "2.0.0"
+    ]
 }
