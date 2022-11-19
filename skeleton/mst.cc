@@ -34,9 +34,6 @@ main(int argc, char **argv)
     }
 
 
-  /* For debugging, can be removed when implementation is finished. */
-  //dump_nonzeros(n_rows, values, col_ind, row_ptr_begin, row_ptr_end);
-
   // Create all initial spanning trees
   // Add indexes
   vector<SpanningTree*> alloc_spanning_trees {};
@@ -48,7 +45,7 @@ main(int argc, char **argv)
     alloc_spanning_trees.push_back(&(spanning_trees[i]));
   }
 
-  auto factorization_start_time = std::chrono::high_resolution_clock::now();
+  auto start_time = std::chrono::high_resolution_clock::now();
 
   /* Perform MST Boruvka’s algorithm here */
   fprintf(stderr, "Size before: %lu\n", spanning_trees.size());
@@ -83,7 +80,6 @@ main(int argc, char **argv)
 
     connectionSpanningTreePtr = find_spanning_tree_of_node(node_conn, alloc_spanning_trees);
     int idx = find_index_spanning_tree(alloc_spanning_trees, connectionSpanningTreePtr);
-    //auto it = find(alloc_spanning_trees.begin(), alloc_spanning_trees.end(), connectionSpanningTreePtr);
 
     spt->join_spanning_tree(*connectionSpanningTreePtr);
     //idx = remove_spanning_tree_from_list(spanning_trees, *connectionSpanningTreePtr);
@@ -95,9 +91,6 @@ main(int argc, char **argv)
       alloc_spanning_trees.erase(alloc_spanning_trees.begin());
       stopping_counter = 0;
     } else {
-      fprintf(stderr, "not enter\n");
-      fprintf(stderr, "Ptr connection: %p", connectionSpanningTreePtr);
-      fprintf(stderr, "Ptr actual: %p", spt);
       stopping_counter += 1;
     }
     size_spt = alloc_spanning_trees.size();
@@ -128,23 +121,24 @@ main(int argc, char **argv)
   // TODO: Check in the same iteration
 
 
-  auto factorization_end_time = std::chrono::high_resolution_clock::now();
-  
-  
-  auto solve_start_time = std::chrono::high_resolution_clock::now();
-  
-  /* Compute all 5 solution vectors here */
-
-  auto solve_end_time = std::chrono::high_resolution_clock::now();
+  auto end_time = std::chrono::high_resolution_clock::now();
   
   /* Compute relative errors here */
   
-  std::chrono::duration<double> factorization_elapsed_time = factorization_end_time - factorization_start_time;
-  std::chrono::duration<double> solve_elapsed_time = solve_end_time - solve_start_time;
+  std::chrono::duration<double> elapsed_time = end_time - start_time;
   
-  
+  freopen("results.txt", "w", stdout);
   /* Print results */
-  fprintf(stdout, "%.20f\n", factorization_elapsed_time.count());
-  fprintf(stdout, "%.20f\n", solve_elapsed_time.count());
+  fprintf(stdout, "%.20f\n", elapsed_time.count());
+
+  for (SpanningTree* spanning_tree : alloc_spanning_trees) {
+    fprintf(stdout, "%d", spanning_tree->edges.size());
+    double total_tree_weight = 0.0;
+    for (Edge* edge : spanning_tree->get_connection_edges()) {
+      fprintf(stdout, "%d %d %.20f\n", edge->node1.vertex, edge->node2.vertex, edge->connection);
+      total_tree_weight += edge->connection;
+    }
+    fprintf(stdout, "%.20f\n\n", total_tree_weight);
+  }
   return 0;
 }
