@@ -8,14 +8,14 @@ using namespace std;
 #include "matrix.h"
 #include "trees.h"
 
+// Create vectors that will contain the information
+vector<Node> nodes;
+vector<Edge> edges;
+vector<SpanningTree> spanning_trees;
+
 int
 main(int argc, char **argv)
 {
-
-  // Create vectors that will contain the information
-  vector<Node> nodes;
-  vector<Edge> edges;
-  vector<SpanningTree> spanning_trees;
 
   if (argc != 2)
     {
@@ -39,12 +39,13 @@ main(int argc, char **argv)
 
   // Create all initial spanning trees
   // Add indexes
-  int add_idx = 0;
-  vector<int> idxs_spanning_trees {}; 
-  for (Node node : nodes) {
-    spanning_trees.push_back(SpanningTree(vector<Node> {node}));
-    idxs_spanning_trees.push_back(add_idx);
-    add_idx += 1;
+  vector<SpanningTree*> alloc_spanning_trees {};
+  for (int i = 0; i < nodes.size(); i++) {
+    spanning_trees.push_back(SpanningTree(vector<Node> {nodes[i]}, get_edges_from_node(nodes[i], edges)));
+  }
+
+  for (int i = 0; i < spanning_trees.size(); i++) {
+    alloc_spanning_trees.push_back(&(spanning_trees[i]));
   }
 
   auto factorization_start_time = std::chrono::high_resolution_clock::now();
@@ -54,52 +55,66 @@ main(int argc, char **argv)
 
   int num_iterations = 0;
   Node node_conn(1); // Create a default spanning tree which will be used
-  Edge conn_edge(1,2,0.1);
+  Edge* conn_edge;
   int idx, real_idx;
-  int size_spt = idxs_spanning_trees.size();
-  int count = 0;
+  int size_spt = alloc_spanning_trees.size();
 
   long unsigned stopping_counter = 0;
   SpanningTree* connectionSpanningTreePtr = nullptr;
   SpanningTree* spt = nullptr;
 
-  
 
   while (num_iterations <= 1000000) {
-    if (idxs_spanning_trees.size() == 1 || stopping_counter == idxs_spanning_trees.size()) {
+    auto it_start_time = std::chrono::high_resolution_clock::now();
+    if (alloc_spanning_trees.size() == 1 || stopping_counter == alloc_spanning_trees.size()) {
       fprintf(stderr, "BREAKING!\n");
       break;
     }
-    count = idxs_spanning_trees[0];
-    spt = &spanning_trees[count];
-    conn_edge = spt->find_minimum_edge(edges, node_conn);
+
+    spt = alloc_spanning_trees[0];
+
+    if (spt->edges.size() == 0) { //Check to avoid all the process
+      stopping_counter += 1;
+      continue;
+    }
+
+    conn_edge = spt->find_minimum_edge(node_conn);
     spt->add_connection_edge(conn_edge);
 
-    connectionSpanningTreePtr = find_spanning_tree_of_node(node_conn, spanning_trees);
-    spt->join_spanning_tree(*connectionSpanningTreePtr, conn_edge);
-    idx = remove_spanning_tree_from_list(spanning_trees, *connectionSpanningTreePtr);
+    connectionSpanningTreePtr = find_spanning_tree_of_node(node_conn, alloc_spanning_trees);
+    int idx = find_index_spanning_tree(alloc_spanning_trees, connectionSpanningTreePtr);
+    //auto it = find(alloc_spanning_trees.begin(), alloc_spanning_trees.end(), connectionSpanningTreePtr);
+
+    spt->join_spanning_tree(*connectionSpanningTreePtr);
+    //idx = remove_spanning_tree_from_list(spanning_trees, *connectionSpanningTreePtr);
     
-    auto it = find(idxs_spanning_trees.begin(), idxs_spanning_trees.end(), idx);
-    real_idx = it - idxs_spanning_trees.begin();
-    if (real_idx < size_spt) {
+    if (idx < size_spt) {
       //fprintf(stderr, "Index: %i, size: %i, count: %i\n", idx, size_spt, count);
-      idxs_spanning_trees.erase(idxs_spanning_trees.begin() + real_idx);
-      idxs_spanning_trees.push_back(idxs_spanning_trees[0]);
-      idxs_spanning_trees.erase(idxs_spanning_trees.begin());
+      alloc_spanning_trees.erase(alloc_spanning_trees.begin() + idx);
+      alloc_spanning_trees.push_back(alloc_spanning_trees[0]);
+      alloc_spanning_trees.erase(alloc_spanning_trees.begin());
       stopping_counter = 0;
     } else {
+      fprintf(stderr, "not enter\n");
+      fprintf(stderr, "Ptr connection: %p", connectionSpanningTreePtr);
+      fprintf(stderr, "Ptr actual: %p", spt);
       stopping_counter += 1;
     }
-    size_spt = idxs_spanning_trees.size();
+    size_spt = alloc_spanning_trees.size();
     num_iterations += 1;
     fprintf(stderr, "%i, %i\n", num_iterations, size_spt);
+    auto it_end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> it_total_time = it_end_time - it_start_time;
+    if (it_total_time.count() > 5.) {
+      auto variable_inveted = 0;
+    }
   }
 
-  fprintf(stderr, "=======FINAL EDGES=======\n");
-  int final_idx = idxs_spanning_trees[0];
+  fprintf(stderr, "========FINAL EDGES======\n");
+  SpanningTree* final_spanning_tree = alloc_spanning_trees[0];
   
-  for (Edge final_edge : spanning_trees[final_idx].get_connection_edges()) {
-    fprintf(stderr, "Edge connecting %i-%i with connection: %f\n", final_edge.node1.vertex, final_edge.node2.vertex, final_edge.connection);
+  for (Edge* final_edge : final_spanning_tree->get_connection_edges()) {
+    //fprintf(stderr, "Edge connecting %i-%i with connection: %f\n", final_edge->node1.vertex, final_edge->node2.vertex, final_edge->connection);
   }
   
   /*
@@ -108,7 +123,7 @@ main(int argc, char **argv)
   }
   */
 
-  fprintf(stderr, "Size after: %lu\n", idxs_spanning_trees.size());
+  fprintf(stderr, "Size after: %lu\n", alloc_spanning_trees.size());
   
   // TODO: Check in the same iteration
 

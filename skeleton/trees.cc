@@ -13,39 +13,54 @@ extern "C" {
 #include "mmio.h"
 }
 
-vector<Edge> get_edges_from_node(Node node, vector<Edge> &edges)
-{
-  vector<Edge> edges_node;
-  for (int ptr_edge : node.ptr_edges) {
-    edges_node.push_back(edges[ptr_edge]);
-  }
-  return edges_node;
-}
-
-void SpanningTree::join_spanning_tree(SpanningTree &st, Edge connection_edge)
-{
-  // Copy nodes
-  for (Node node : st.nodes) {
-    nodes.push_back(node);
-  }
-
-  // Copy edges
-  for (Edge edge : st.edges) {
-    edges.push_back(edge);
-  }
-
-  // Add edge
-  for (Edge conn_edge : st.get_connection_edges()){
-    add_connection_edge(conn_edge);
-  }
-}
-
 bool node_is_not_inside(vector<Node> &nodes, Node ev_node)
 {
   if (std::find(nodes.begin(), nodes.end(), ev_node) != nodes.end()) {
     return false;
   }
   return true;
+}
+
+bool comparePtrToEdge(Edge* a, Edge* b) { return (*a < *b); }
+
+vector<Edge*> get_edges_from_node(Node node, vector<Edge> &edges)
+{
+  vector<Edge*> edges_node;
+  for (int ptr_edge : node.ptr_edges) {
+    edges_node.push_back(&edges[ptr_edge]);
+  }
+  return edges_node;
+}
+
+void SpanningTree::join_spanning_tree(SpanningTree &st)
+{
+  // Copy nodes
+  for (int i = 0; i < st.nodes.size(); i++) {
+    nodes.push_back(st.nodes[i]);
+  }
+
+  // Remove actual edges that connect between them
+  
+  for (int i = 0; i < edges.size(); i++) {
+    if (!(node_is_not_inside(nodes, edges[i]->node1)) && !(node_is_not_inside(nodes, edges[i]->node2))) {
+        edges.erase(edges.begin() + i);
+        i--; //Avoid skipping one element
+    }
+  }
+
+  // Copy edges that don't connect edges from the same spanning tree
+  for (int i = 0; i < st.edges.size(); i++) {
+    if (node_is_not_inside(nodes, st.edges[i]->node1) || node_is_not_inside(nodes, st.edges[i]->node2)) {
+      edges.push_back(st.edges[i]);
+    }
+  }
+
+  Edge* conn_edge = nullptr;
+  // Add edge
+  for (int i = 0; i < st.get_connection_edges().size(); i++){
+    conn_edge = st.get_connection_edges()[i];
+    add_connection_edge(conn_edge);
+  }
 }
 
 bool edge_is_not_inside(vector<Edge> &edges, Edge ev_edge)
@@ -56,25 +71,15 @@ bool edge_is_not_inside(vector<Edge> &edges, Edge ev_edge)
   return true;
 }
 
-Edge SpanningTree::find_minimum_edge(vector<Edge> &edges, Node &node_connection)
+Edge* SpanningTree::find_minimum_edge(Node &node_connection)
 {
-  vector<Edge> edges_evaluated;
-  for (Node node : nodes) {
-    for (int ptr_edge : node.ptr_edges) {
-      Edge ev_edge = edges[ptr_edge];
-      if ((node_is_not_inside(nodes, ev_edge.node1) || node_is_not_inside(nodes, ev_edge.node2)) && edge_is_not_inside(edges_evaluated, ev_edge)) {
-        edges_evaluated.push_back(ev_edge);
-        
-      }
-    }
-  }
-  std::sort(edges_evaluated.begin(), edges_evaluated.end());
-  if (node_is_not_inside(nodes, edges_evaluated[0].node1)) {
-    node_connection = edges_evaluated[0].node1;
+  std::sort(edges.begin(), edges.end(), comparePtrToEdge);
+  if (node_is_not_inside(nodes, edges[0]->node1)) {
+    node_connection = edges[0]->node1;
   } else {
-    node_connection = edges_evaluated[0].node2;
+    node_connection = edges[0]->node2;
   }
-  return edges_evaluated[0];
+  return edges[0];
 }
 
 int remove_spanning_tree_from_list(vector<SpanningTree> &spanning_trees, SpanningTree &remove_st)
@@ -89,26 +94,34 @@ int remove_spanning_tree_from_list(vector<SpanningTree> &spanning_trees, Spannin
   return idx;
 }
 
-SpanningTree *find_spanning_tree_of_node(Node node, vector<SpanningTree> &spanning_trees)
+SpanningTree *find_spanning_tree_of_node(Node node, vector<SpanningTree*> &alloc_spanning_trees)
 {
   
-  for (int i = 0; i < spanning_trees.size(); i++) {
-    if (node_is_not_inside(spanning_trees[i].nodes, node) == false) {
-      SpanningTree* ptr = (SpanningTree*) malloc(sizeof(spanning_trees[i]));
-      ptr = &spanning_trees[i];
-
+  for (int i = 0; i < alloc_spanning_trees.size(); i++) {
+    if (node_is_not_inside(alloc_spanning_trees[i]->nodes, node) == false) {
+      SpanningTree* ptr = (SpanningTree*) malloc(sizeof(*(alloc_spanning_trees[i])));
+      ptr = alloc_spanning_trees[i];
       return ptr;
     }
   }
 }
 
 
-void SpanningTree::add_connection_edge(Edge add_edge)
+void SpanningTree::add_connection_edge(Edge* add_edge)
 {
   connection_edges_.push_back(add_edge);
 }
 
-vector<Edge> SpanningTree::get_connection_edges()
+vector<Edge*> SpanningTree::get_connection_edges()
 {
   return connection_edges_;
+}
+
+int find_index_spanning_tree(vector<SpanningTree*> alloc_spanning_trees, SpanningTree* connectionSpanningTreePtr) {
+  for (int i = 0; i < alloc_spanning_trees.size(); i++) {
+    if (alloc_spanning_trees[i] == connectionSpanningTreePtr) {
+      return i;
+    }
+  }
+  return alloc_spanning_trees.size();
 }

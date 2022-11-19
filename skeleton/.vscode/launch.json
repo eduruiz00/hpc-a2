@@ -11,7 +11,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/mst",
-            "args": ["${workspaceFolder}/matrix/test.mtx"],
+            "args": ["${workspaceFolder}/matrix/nopoly.mtx"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

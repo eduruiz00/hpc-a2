@@ -28,22 +28,23 @@ class Edge {
 class SpanningTree {
     public:
         vector<Node> nodes;
-        vector<Edge> edges;
-        void add_connection_edge(Edge add_edge);
-        SpanningTree(vector<Node> nodes) : nodes(nodes) {};
-        void join_spanning_tree(SpanningTree &st, Edge connection_edge);
-        Edge find_minimum_edge(vector<Edge> &edges, Node &node_connection);
-        vector<Edge> get_connection_edges();
+        vector<Edge*> edges;
+        void add_connection_edge(Edge* add_edge);
+        SpanningTree(vector<Node> nodes, vector<Edge*> edges) : nodes(nodes), edges(edges) {};
+        void join_spanning_tree(SpanningTree &st);
+        Edge* find_minimum_edge(Node &node_connection);
+        vector<Edge*> get_connection_edges();
         bool operator== (const SpanningTree &other) const {
-            return (nodes[0] == other.nodes[0]); // && (nodes.size() == other.nodes.size());
+            return (nodes[0] == other.nodes[0]) && (nodes.size() == other.nodes.size()) && nodes.back() == other.nodes.back();
         }
     private:
-        vector<Edge> connection_edges_;
+        vector<Edge*> connection_edges_;
 
 };
-
-vector<Edge> get_edges_from_node(Node node, vector<Edge> &edges);
+bool comparePtrToEdge(Edge* a, Edge* b);
+vector<Edge*> get_edges_from_node(Node node, vector<Edge> &edges);
 int remove_spanning_tree_from_list(vector<SpanningTree> &spanning_trees, SpanningTree &remove_st);
-SpanningTree *find_spanning_tree_of_node(Node node, vector<SpanningTree> &spanning_trees);
+SpanningTree *find_spanning_tree_of_node(Node node, vector<SpanningTree*> &alloc_spanning_trees);
+int find_index_spanning_tree(vector<SpanningTree*> alloc_spanning_trees, SpanningTree* connectionSpanningTreePtr);
 
 #endif /* __TREES_H__ */
