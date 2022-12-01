@@ -13,6 +13,9 @@ bool load_matrix_market(const char *filename,
                         int        &n_rows,
                         int        &n_cols,
                         std::vector<Node> &nodes,
-                        std::vector<Edge> &edges);
+                        std::vector<Edge> &edges,
+                        int         &my_rank,
+                        int         &n_proc,
+                        std::vector<SpanningTree> &spanning_trees);
 
 #endif /* __MATRIX_H__ */

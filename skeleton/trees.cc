@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <mpi.h>
 
 using namespace std;
 
@@ -61,6 +62,18 @@ void SpanningTree::join_spanning_tree(SpanningTree &st)
     conn_edge = st.get_connection_edges()[i];
     add_connection_edge(conn_edge);
   }
+
+  // Take the lower connection to others
+  if (st.conn_other_proc != nullptr) {
+    if (conn_other_proc != nullptr) {
+      if (conn_other_proc->connection > st.conn_other_proc->connection) {
+        conn_other_proc = st.conn_other_proc;
+      }
+    } else {
+      conn_other_proc = st.conn_other_proc;
+    }
+  }
+  
 }
 
 bool edge_is_not_inside(vector<Edge> &edges, Edge ev_edge)
@@ -124,4 +137,84 @@ int find_index_spanning_tree(vector<SpanningTree*> alloc_spanning_trees, Spannin
     }
   }
   return alloc_spanning_trees.size();
+}
+
+bool edge_inside_proc_spanning_trees(vector<SpanningTree> &spanning_trees, Edge* edge)
+{
+  bool node1_inside = false;
+  bool node2_inside = false;
+  for (int st = 0; st < spanning_trees.size(); st++) {
+    if (!node_is_not_inside(spanning_trees[st].nodes, edge->node1)) {
+      node1_inside = true;
+    }
+    if (!node_is_not_inside(spanning_trees[st].nodes, edge->node2)) {
+      node2_inside = true;
+    }
+    if (node1_inside && node2_inside) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void SpanningTree::lowest_connection_st_other_processors(vector<SpanningTree> &spanning_trees)
+{
+  vector<Edge*> edges_conn_other_proc;
+  for (int i = 0; i < edges.size(); i++) {
+    if (!edge_inside_proc_spanning_trees(spanning_trees, edges[i])) {
+      fprintf(stderr, "Entering\n");
+      edges_conn_other_proc.push_back(edges[i]);
+      edges.erase(edges.begin() + i);
+      i--; //Avoid skipping one element
+    }
+  }
+
+  
+  // Sort and take the first one
+  if (edges_conn_other_proc.size() > 0) {
+    std::sort(edges_conn_other_proc.begin(), edges_conn_other_proc.end(), comparePtrToEdge);
+    conn_other_proc = edges_conn_other_proc[0];
+  }
+  
+}
+
+void SpanningTree::return_list_nodes(SendData &sd) {
+  for (int i = 0; i < nodes.size(); i++) {
+    sd.nodes[i] = nodes[i].vertex;
+  }
+}
+
+void SpanningTree::return_list_edges_nodes1(SendData &sd) {
+  for (int i = 0; i < edges.size(); i++) {
+    sd.nodes1[i] = edges[i]->node1.vertex;
+  }
+}
+
+void SpanningTree::return_list_edges_nodes2(SendData &sd) {
+  for (int i = 0; i < edges.size(); i++) {
+    sd.nodes2[i] = edges[i]->node2.vertex;
+  }
+}
+
+void SpanningTree::return_list_edges_connections(SendData &sd) {
+  for (int i = 0; i < edges.size(); i++) {
+    sd.connections[i] = edges[i]->connection;
+  }
+}
+
+void fill_final_spanning_trees(vector<SpanningTree> &final_spanning_trees, SendData &rec_data, vector<Edge> &final_edges) {
+  vector<Node> vec_nodes;
+  for (int i = 0; i < rec_data.nodes_sz; i++) {
+    vec_nodes.push_back(Node(rec_data.nodes[i]));
+  }
+  SpanningTree add_st(vec_nodes, {});
+  for (int i = 0; i < rec_data.edges_sz; i++) {
+    final_edges.push_back(Edge(rec_data.nodes1[i], rec_data.nodes2[i], rec_data.connections[i]));
+    add_st.add_connection_edge(&(final_edges.back()));
+  }
+  if (rec_data.node1_conn != -1) {
+    final_edges.push_back(Edge(rec_data.node1_conn, rec_data.node2_conn, rec_data.conn_val));
+    add_st.edges.push_back(&(final_edges.back()));
+  }
+  final_spanning_trees.push_back(add_st);
 }

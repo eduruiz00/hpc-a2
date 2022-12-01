@@ -1,5 +1,5 @@
-CC = gcc
-CXX = g++
+CC = /usr/local/bin/mpicc
+CXX = /usr/local/bin/mpic++
 CFLAGS = -Wall -Wextra -Wno-unused-result -Wno-unused-parameter -Wno-unused-but-set-variable -O3 -g
 CXXFLAGS = $(CFLAGS) -std=c++11
 
